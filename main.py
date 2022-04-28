@@ -4,7 +4,6 @@
 import requests
 from bs4 import BeautifulSoup
 
-
 #Take URL and Round Input
 url = str(input("Enter Round 1 Tabroom URL: "))
 rounds = int(input("Enter # of Prelims: "))
