@@ -2,6 +2,7 @@
 #PD for data-table scraping
 import pandas as pd
 import requests
+import json
 from bs4 import BeautifulSoup
 
 def find_speaks(x, speak):
@@ -44,6 +45,9 @@ for i in range(rounds):
 
 #Open Links
 
+final_speaks = dict()
+rounds_judged = dict()
+
 try:
   
   for i in range(len(round_links)):
@@ -58,21 +62,39 @@ try:
     for j in range(len(table)):
   
       try:
+        
         t1 = find_speaks(str(table.iloc[j,4]), speak_pos)
         t2 = find_speaks(str(table.iloc[j,5]), speak_pos)
+        judge_name = table.iloc[j,2]
     
         average = float(t1+t2)/2
-    
-        print(str(table.iloc[j,2]) + " : " + str(average))
-  
+
+        #Check if judge is in the dictionary
+        
+        #If NO
+        if judge_name not in final_speaks:
+          final_speaks.update({judge_name:average})
+          rounds_judged.update({judge_name:1})
+          
+        #If YES
+        else:
+          current_avg = final_speaks.get(judge_name)
+          current_rounds = rounds_judged.get(judge_name) 
+          final_speaks[judge_name] = current_avg + average
+          rounds_judged[judge_name] = current_rounds + 1
+          
       except:
-        print("BYE ROUND - NO SPEAKS TABULATED")
+        pass
 
 except:
   
   pass
 
+#Now calculate the average
+for key, value in final_speaks.items():
+  rounds = rounds_judged.get(key)
+  final_speaks[key] = round(float(value/rounds),4)
 
-  
+print(json.dumps(final_speaks, indent=3))
 
   
