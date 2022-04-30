@@ -5,6 +5,10 @@ import requests
 import json
 from bs4 import BeautifulSoup
 
+import openpyxl
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
+
 def find_speaks(x, speak):
   
   nums = []
@@ -22,12 +26,13 @@ def find_speaks(x, speak):
     second_speak = float(nums[3] * 10) + float(nums[4]) + float(nums[5]*0.1)
 
   return (first_speak + second_speak) / 2
-    
 
 #Take URL and Round Input
 url = str(input("Enter Round 1 Tabroom URL: "))
 rounds = int(input("Enter # of Prelims: "))
-ask_speak = str(input("Does the tournament list speaker positions y/n: "))
+ask_speak = str(input("Does The Tournament List Speaker Positions in the Results Category y/n: "))
+
+print("Tabulating Averages . . . ")
 
 speak_pos = False
 
@@ -48,19 +53,19 @@ for i in range(rounds):
 final_speaks = dict()
 rounds_judged = dict()
 
+
 try:
-  
   for i in range(len(round_links)):
-  
+
     round_html = requests.get(round_links[i])
     round_soup = BeautifulSoup(round_html.text, 'html.parser')
     
     dfs = pd.read_html(round_html.text)
     table = dfs[0]
-  
+
     #Iterate through rows
     for j in range(len(table)):
-  
+
       try:
         
         t1 = find_speaks(str(table.iloc[j,4]), speak_pos)
@@ -87,7 +92,6 @@ try:
         pass
 
 except:
-  
   pass
 
 #Now calculate the average
@@ -95,6 +99,46 @@ for key, value in final_speaks.items():
   rounds = rounds_judged.get(key)
   final_speaks[key] = round(float(value/rounds),4)
 
-print(json.dumps(final_speaks, indent=3))
+#print(json.dumps(final_speaks, indent=3))
 
-  
+#SPREADSHEET TRANSFER
+
+#Spreedsheet Information Transfer
+wb = load_workbook('tabroom-automation/yao.xlsx')
+ws = wb.active
+
+#Iterate through all the judges in the dictionary
+
+for key, value in final_speaks.items():
+
+    value_done = False
+
+    row = 2
+    col = 1
+
+
+    while not value_done:
+
+      if ws.cell(row=row,column=col).value == str(key):
+
+          iteration = 1 
+          found_empty = False
+
+          while found_empty == False:
+              
+              if ws.cell(row=row, column=col+iteration).value is None:
+                  ws.cell(row=row, column=col+iteration).value = value
+                  found_empty = True 
+                  value_done = True
+
+              iteration += 1
+              
+      elif ws.cell(row=row,column=col).value is None:
+          ws.cell(row=row,column=col).value = str(key)
+          ws.cell(row=row,column=col+1).value = value
+          value_done = True
+          
+      else:
+        row += 1
+
+wb.save('tabroom-automation/yao.xlsx')
